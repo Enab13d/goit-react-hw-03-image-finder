@@ -1,90 +1,84 @@
-import { nanoid } from 'nanoid';
-import { Component } from 'react';
-import { ContactForm } from '../ContactForm';
-import { Filter } from '../Filter';
-import { ContactList } from '../ContactList';
-import { Wrapper } from './App.styled';
 
+import { Component } from 'react';
+import { fetchImages } from 'constants/api';
+import { ImageGallery } from 'components/ImageGallery/ImageGallery';
+import { Button } from 'components/Button/Button';
+import { Searchbar } from 'components/Searchbar/Searchbar';
+import { Modal } from 'components/Modal/Modal';
+import { Wrapper } from './App.styled';
 export class App extends Component {
   state = {
-    contacts: [],
-    filter: '',
+    searchQuery: '',
+    items: [],
+    page: 1,
+    totalPages: null,
+    perPage: 12,
+    selectedImageUrl: null,
+    isSelected: false
   };
-
-  handleSubmit = e => {
+  onSubmit = async e => {
     e.preventDefault();
-    const { name, number } = e.target.elements;
-    const value = name.value;
-    let id = nanoid();
-    this.setState(prevState => {
-      const isContain = prevState.contacts.some(
-        contact => contact.name === value
-      );
-      if (isContain) {
-        return alert(`${value} is already in contacts.`);
-      }
-      const updatedContacts = [
-        ...prevState.contacts,
-        { name: value, number: number.value, id },
-      ];
-      e.target.reset();
-      return { contacts: updatedContacts };
-    });
-  };
-  getFoundContacts = () => {
-    const { contacts, filter } = this.state;
 
-    const normalizedFilter = filter.toLowerCase();
-    return contacts.filter(contact =>
-      contact.name.toLowerCase().includes(normalizedFilter)
-    );
-  };
-  handleFilterChange = e => this.setState({ filter: e.target.value });
-  handleDeleteBtnClick = e => {
-    this.setState(prevState => {
-      return {
-        contacts: [...prevState.contacts].filter(
-          contact => contact.id !== e.target.id
-        ),
-      };
-    });
-  };
-  componentDidMount() {
+    const { page, perPage} = this.state;
+    const {
+      search: { value: searchQuery },
+    } = e.target.elements;
     try {
-      const recievedContacts = JSON.parse(localStorage.getItem('contacts'));
-      if (recievedContacts !== null) {
-        this.setState({ contacts: recievedContacts });
-      }
+      const response = await fetchImages(searchQuery, page, perPage);
+      const {
+        data: { hits: items, totalHits },
+      } = response;
+      console.log(items);
+      const totalPages = Math.ceil(totalHits / perPage);
+
+      this.setState(prevState => {
+        return { searchQuery, page: prevState.page + 1, items, totalPages };
+      });
+    } catch (error) {
+      console.log(error);
+    }
+    e.target.reset();
+  };
+  onLoadMore = async () => {
+    const { page, perPage, searchQuery } = this.state;
+    try {
+      const response = await fetchImages(searchQuery, page, perPage);
+      const {
+        data: { hits: items},
+      } = response;
+      this.setState(prevState => {
+        return { page: prevState.page + 1, items: [...prevState.items, ...items] };
+      });
+
     } catch (error) {
       console.log(error);
     }
   }
+onImageClick = (e) => {
+  const {key} = e.currentTarget;
+  const {items} = this.state;
+  const obj = [...items].filter(item => item.id === key);
+  const selectedImageUrl = obj.largeImageURL;
+
+  this.setState({selectedImageUrl, isSelected: true});
+}
+
+
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.contacts !== this.state.contacts) {
-      const { contacts } = this.state;
-      try {
-        const itemToSet = JSON.stringify(contacts);
-        localStorage.setItem('contacts', itemToSet);
-      } catch (error) {
-        console.log(error);
-      }
+    if (prevState.searchQuery !== this.state.searchQuery) {
+      this.setState({ page: 0 });
     }
   }
-  render() {
-    const { getFoundContacts } = this;
-    const filteredContacts = getFoundContacts();
 
-    const { handleSubmit, handleFilterChange, handleDeleteBtnClick } = this;
+  render() {
+    const { items, selectedImageUrl, page, totalPages, isSelected, onImageClick } = this.state;
+    const {onLoadMore, onSubmit} = this;
     return (
       <Wrapper>
-        <h1>Phonebook</h1>
-        <ContactForm handleSubmit={handleSubmit}></ContactForm>
-        <h2>Contacts</h2>
-        <Filter handleFilterChange={handleFilterChange}></Filter>
-        <ContactList
-          contacts={filteredContacts}
-          handleDeleteBtnClick={handleDeleteBtnClick}
-        ></ContactList>
+      <Searchbar onSubmit={onSubmit}/>
+        <ImageGallery images={items} onClick={onImageClick}></ImageGallery>
+        {page >= 1 && page < totalPages && <Button onClick={onLoadMore}/>}
+        {isSelected && <Modal url={selectedImageUrl}/>}
       </Wrapper>
     );
   }

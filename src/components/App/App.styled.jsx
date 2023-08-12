@@ -1,8 +1,9 @@
 import styled from '@emotion/styled';
 import { theme } from 'constants';
+
 export const Wrapper = styled.div`
-  margin-left: auto;
-  margin-right: auto;
-  width: 400px;
-  padding: ${theme.sizing(3)};
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-gap: 16px;
+    padding-bottom: 24px;
 `;
