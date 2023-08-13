@@ -1,7 +1,7 @@
 import styled from "@emotion/styled";
-
+import { theme } from "constants";
 export const LoadMoreBtn = styled.button`
-padding: 8px 16px;
+padding: ${theme.sizing(2)} ${theme.sizing(4)};
 position: relative;
 border-radius: 2px;
 background-color: #3f51b5;
@@ -14,7 +14,7 @@ text-decoration: none;
 cursor: pointer;
 font-family: inherit;
 font-size: 18px;
-line-height: 24px;
+line-height: ${theme.sizing(6)};
 font-style: normal;
 font-weight: 500;
 min-width: 180px;

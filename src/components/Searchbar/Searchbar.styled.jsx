@@ -1,5 +1,6 @@
 import styled from "@emotion/styled"
-
+import { theme
+ } from "constants";
 export const SearchHeader = styled.header`
     top: 0;
     left: 0;
@@ -9,10 +10,10 @@ export const SearchHeader = styled.header`
     justify-content: center;
     align-items: center;
     min-height: 64px;
-    padding-right: 24px;
-    padding-left: 24px;
-    padding-top: 12px;
-    padding-bottom: 12px;
+    padding-right: ${theme.sizing(6)};
+    padding-left: ${theme.sizing(6)};
+    padding-top: ${theme.sizing(3)};
+    padding-bottom: ${theme.sizing(3)};
     color: #fff;
     background-color: #3f51b5;
     box-shadow: 0px 2px 4px -1px rgba(0, 0, 0, 0.2),
@@ -29,8 +30,8 @@ export const SearchForm = styled.form`
 `
 export const SearchBtn = styled.button`
 display: inline-block;
-width: 48px;
-height: 48px;
+width: ${theme.sizing(12)};
+height: ${theme.sizing(12)};
 border: 0;
 background-image: url('https://cdn3.iconfinder.com/data/icons/feather-5/24/search-1024.png');
 background-size: 40%;
@@ -62,8 +63,8 @@ font: inherit;
 font-size: 20px;
 border: none;
 outline: none;
-padding-left: 4px;
-padding-right: 4px;
+padding-left: ${theme.sizing(1)};
+padding-right: ${theme.sizing(1)};
 ::placeholder {
     font: inherit;
     font-size: 18px;
