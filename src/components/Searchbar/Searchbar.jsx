@@ -1,6 +1,14 @@
-const {SearchHeader, SearchForm, SearchBtn, SearchBtnLabel, SearchInput } = require("./Searchbar.styled");
+import PropTypes from 'prop-types';
 
-export const Searchbar = ({onSubmit}) => {
+const {
+  SearchHeader,
+  SearchForm,
+  SearchBtn,
+  SearchBtnLabel,
+  SearchInput,
+} = require('./Searchbar.styled');
+
+export const Searchbar = ({ onSubmit }) => {
   return (
     <SearchHeader>
       <SearchForm onSubmit={onSubmit}>
@@ -18,4 +26,8 @@ export const Searchbar = ({onSubmit}) => {
       </SearchForm>
     </SearchHeader>
   );
+};
+
+Searchbar.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
 };

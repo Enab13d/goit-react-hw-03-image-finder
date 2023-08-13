@@ -1,4 +1,3 @@
-
 import { Component } from 'react';
 import { fetchImages } from 'constants/api';
 import { ImageGallery } from 'components/ImageGallery/ImageGallery';
@@ -6,6 +5,8 @@ import { Button } from 'components/Button/Button';
 import { Searchbar } from 'components/Searchbar/Searchbar';
 import { Modal } from 'components/Modal/Modal';
 import { Wrapper } from './App.styled';
+import { Loader } from 'components/Loader/Loader';
+
 export class App extends Component {
   state = {
     searchQuery: '',
@@ -14,21 +15,29 @@ export class App extends Component {
     totalPages: null,
     perPage: 12,
     selectedImageUrl: null,
-    isSelected: false
+    isModalOpen: false,
+    isLoading: false,
+  };
+  startLoader = () => {
+    this.setState({ isLoading: true });
+  };
+  stopLoader = () => {
+    this.setState({ isLoading: false });
   };
   onSubmit = async e => {
     e.preventDefault();
-
-    const { page, perPage} = this.state;
+    const { page, perPage } = this.state;
     const {
       search: { value: searchQuery },
     } = e.target.elements;
+    if (searchQuery.trim() === '') {
+      return;
+    }
     try {
       const response = await fetchImages(searchQuery, page, perPage);
       const {
         data: { hits: items, totalHits },
       } = response;
-      console.log(items);
       const totalPages = Math.ceil(totalHits / perPage);
 
       this.setState(prevState => {
@@ -40,45 +49,93 @@ export class App extends Component {
     e.target.reset();
   };
   onLoadMore = async () => {
+    const { startLoader, stopLoader } = this;
     const { page, perPage, searchQuery } = this.state;
     try {
+      startLoader();
       const response = await fetchImages(searchQuery, page, perPage);
       const {
-        data: { hits: items},
+        data: { hits: items },
       } = response;
       this.setState(prevState => {
-        return { page: prevState.page + 1, items: [...prevState.items, ...items] };
+        return {
+          page: prevState.page + 1,
+          items: [...prevState.items, ...items],
+        };
       });
-
     } catch (error) {
       console.log(error);
+    } finally {
+      stopLoader();
     }
+  };
+  onImageClick = e => {
+    const { id } = e.currentTarget;
+    const { items } = this.state;
+    const largeImageURL = [...items]
+      .filter(item => item.id === Number(id))
+      .map(obj => obj.largeImageURL);
+    const selectedImageUrl = largeImageURL;
+    this.setState({ selectedImageUrl });
+    this.showModal();
+  };
+  onModalClose = e => {
+    if (e.key === 'Escape') {
+      this.hideModal();
+    }
+  };
+
+  showModal = () => {
+    this.setState({ isModalOpen: true });
+  };
+
+  hideModal = () => {
+    this.setState({ isModalOpen: false });
+  };
+
+  onBackdropClick = e => {
+    const { hideModal } = this;
+    if (e.target.nodeName !== 'IMG') {
+      hideModal();
+    }
+  };
+  componentDidMount() {
+    window.addEventListener('keydown', this.onModalClose);
   }
-onImageClick = (e) => {
-  const {key} = e.currentTarget;
-  const {items} = this.state;
-  const obj = [...items].filter(item => item.id === key);
-  const selectedImageUrl = obj.largeImageURL;
-
-  this.setState({selectedImageUrl, isSelected: true});
-}
-
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.searchQuery !== this.state.searchQuery) {
-      this.setState({ page: 0 });
+    if (
+      prevState.searchQuery !== this.state.searchQuery &&
+      this.state.page > 2
+    ) {
+      this.setState({ page: 1 });
     }
   }
-
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.onModalClose);
+  }
   render() {
-    const { items, selectedImageUrl, page, totalPages, isSelected, onImageClick } = this.state;
-    const {onLoadMore, onSubmit} = this;
+    const {
+      items,
+      selectedImageUrl,
+      page,
+      totalPages,
+      isModalOpen,
+      isLoading,
+    } = this.state;
+
+    const { onLoadMore, onSubmit, onImageClick, onBackdropClick } = this;
     return (
       <Wrapper>
-      <Searchbar onSubmit={onSubmit}/>
+        <Searchbar onSubmit={onSubmit} />
         <ImageGallery images={items} onClick={onImageClick}></ImageGallery>
-        {page >= 1 && page < totalPages && <Button onClick={onLoadMore}/>}
-        {isSelected && <Modal url={selectedImageUrl}/>}
+        {items.length > 1 && page > 0 && page < totalPages && !isLoading && (
+          <Button onClick={onLoadMore} />
+        )}
+        {isLoading && <Loader />}
+        {isModalOpen && (
+          <Modal url={selectedImageUrl} onClick={onBackdropClick} />
+        )}
       </Wrapper>
     );
   }

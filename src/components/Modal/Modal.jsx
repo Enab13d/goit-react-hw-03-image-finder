@@ -1,11 +1,19 @@
+import PropTypes from 'prop-types';
 import { Overlay, ModalWindow } from "./Modal.styled";
+import ReactDOM from "react-dom" 
 
-export const Modal = ({ url }) => {
-  return (
-    <Overlay>
+export const Modal = ({ url, onClick }) => {
+  return ReactDOM.createPortal(
+    <Overlay onClick={onClick}>
       <ModalWindow>
-        <img src={url} alt="" />
+        <img src={url} alt=""/>
       </ModalWindow>
-    </Overlay>
+    </Overlay>,
+    document.querySelector("#modal-root")
   );
 };
+
+Modal.propTypes = {
+  url: PropTypes.string.isRequired,
+  onClick: PropTypes.func.isRequired,
+}
