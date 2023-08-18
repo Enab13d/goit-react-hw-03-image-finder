@@ -24,57 +24,34 @@ export class App extends Component {
   stopLoader = () => {
     this.setState({ isLoading: false });
   };
-  onSubmit = async e => {
+  onSubmit = e => {
     e.preventDefault();
-    const { page, perPage } = this.state;
     const {
       search: { value: searchQuery },
     } = e.target.elements;
     if (searchQuery.trim() === '') {
       return;
     }
-    try {
-      const response = await fetchImages(searchQuery, page, perPage);
-      const {
-        data: { hits: items, totalHits },
-      } = response;
-      const totalPages = Math.ceil(totalHits / perPage);
-
-      this.setState(prevState => {
-        return { searchQuery, page: prevState.page + 1, items, totalPages };
+    if (searchQuery.trim() !== this.state.searchQuery) {
+      this.setState({
+        searchQuery,
+        items: [],
+        page: 1,
       });
-    } catch (error) {
-      console.log(error);
     }
-    e.target.reset();
   };
-  onLoadMore = async () => {
-    const { startLoader, stopLoader } = this;
-    const { page, perPage, searchQuery } = this.state;
-    try {
-      startLoader();
-      const response = await fetchImages(searchQuery, page, perPage);
-      const {
-        data: { hits: items },
-      } = response;
-      this.setState(prevState => {
-        return {
-          page: prevState.page + 1,
-          items: [...prevState.items, ...items],
-        };
-      });
-    } catch (error) {
-      console.log(error);
-    } finally {
-      stopLoader();
-    }
+  onLoadMore = () => {
+    this.setState(state => {
+      return { page: state.page + 1 };
+    });
   };
   onImageClick = e => {
     const { id } = e.currentTarget;
     const { items } = this.state;
     const largeImageURL = [...items]
       .filter(item => item.id === Number(id))
-      .map(obj => obj.largeImageURL);
+      .map(obj => obj.largeImageURL)
+      .join('');
     const selectedImageUrl = largeImageURL;
     this.setState({ selectedImageUrl });
     this.showModal();
@@ -99,16 +76,27 @@ export class App extends Component {
       hideModal();
     }
   };
-  componentDidMount() {
-    window.addEventListener('keydown', this.onModalClose);
-  }
 
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.searchQuery !== this.state.searchQuery &&
-      this.state.page > 2
-    ) {
-      this.setState({ page: 1 });
+  async componentDidUpdate(prevProps, prevState) {
+    const { startLoader, stopLoader } = this;
+    const { page, perPage, searchQuery } = this.state;
+    if (prevState.searchQuery !== searchQuery || prevState.page !== page) {
+      try {
+        startLoader();
+        const response = await fetchImages(searchQuery, page, perPage);
+        const {
+          data: { hits: items, totalHits },
+        } = response;
+        const totalPages = Math.ceil(totalHits / perPage);
+
+        this.setState(state => {
+          return { items: [...state.items, ...items], totalPages };
+        });
+      } catch (error) {
+        console.log(error);
+      } finally {
+        stopLoader();
+      }
     }
   }
   componentWillUnmount() {
@@ -124,7 +112,13 @@ export class App extends Component {
       isLoading,
     } = this.state;
 
-    const { onLoadMore, onSubmit, onImageClick, onBackdropClick } = this;
+    const {
+      onLoadMore,
+      onSubmit,
+      onImageClick,
+      onBackdropClick,
+      onModalClose,
+    } = this;
     return (
       <Wrapper>
         <Searchbar onSubmit={onSubmit} />
@@ -134,7 +128,11 @@ export class App extends Component {
         )}
         {isLoading && <Loader />}
         {isModalOpen && (
-          <Modal url={selectedImageUrl} onClick={onBackdropClick} />
+          <Modal
+            url={selectedImageUrl}
+            onClick={onBackdropClick}
+            onModalClose={onModalClose}
+          />
         )}
       </Wrapper>
     );
